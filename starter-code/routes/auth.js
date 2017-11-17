@@ -59,4 +59,48 @@ router.post('/signup', (req, res, next) => {
     });
   });
 });
+
+
+router.get('/login', (req, res, next) => {
+  res.render('auth/login', {
+    errorMessage: ''
+  });
+});
+router.post('/login', (req, res, next) => {
+  const {email, password} = req.body;
+  if (email === '' || password === '') {
+    res.render('auth/login', {
+      errorMessage: 'Enter both email and password to log in.'
+    });
+    return;
+  }
+  User.findOne({ email })
+  .then(user => {
+      if(!user) throw new Error(`There isn't an account with email ${email}.`);
+      if (bcrypt.compareSync(password, user.password)) {
+       req.session.currentUser = user;
+       res.redirect('/');
+     }else{
+       throw new Error('Invalid password');
+     }
+  }).catch(e => {
+    return res.render('auth/login', {
+          errorMessage: e.message
+    });
+  });
+});
+router.get('/logout', (req, res, next) => {
+  if (!req.session.currentUser) {
+    res.redirect('/');
+    return;
+  }
+  req.session.destroy((err) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    res.redirect('/');
+  });
+});
+
 module.exports = router;
